@@ -50,7 +50,7 @@ struct ContentView: View {
             }
 
             HStack(spacing: 24) {
-                // Food Progress Ring
+                // food Progress Ring
                 NavigationLink(destination: FoodScreen()) {
                     VStack(spacing: 4) {
                         ZStack {
@@ -77,7 +77,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Water Progress Ring
+                // water Progress Ring
                 NavigationLink(destination: WaterScreen()) {
                     VStack(spacing: 4) {
                         ZStack {
@@ -105,7 +105,7 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
 
-            // History and Goals buttons
+            // history and goals buttons
             HStack(spacing: 12) {
                 NavigationLink(destination: HistoryView()) {
                     Text("History")
@@ -136,13 +136,20 @@ struct ContentView: View {
             NotificationManager.shared.requestAuthorization()
             checkAndResetDailyGoals()
             
-            // Wakes up the Bluetooth bridge
+            
             _ = WatchConnector.shared
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .active {
                 checkAndResetDailyGoals()
             }
+        }
+
+        .onReceive(WatchConnector.shared.$syncedFood) { newValue in
+            if newValue > 0 { self.foodConsumed = newValue }
+        }
+        .onReceive(WatchConnector.shared.$syncedWater) { newValue in
+            if newValue > 0 { self.waterConsumed = newValue }
         }
     }
     

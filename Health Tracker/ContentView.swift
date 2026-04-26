@@ -6,7 +6,7 @@ struct ContentView: View {
         TabView {
             DashboardView()
                 .tabItem {
-                    Label("Dashboard", systemImage: "chart.pie.fill")
+                    Label("Home", systemImage: "house")
                 }
             
             HistoryView()

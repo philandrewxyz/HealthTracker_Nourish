@@ -60,18 +60,21 @@ struct AddEntryView: View {
             let newEntry = ConsumptionEntry(type: entryType, amount: amountValue, categoryName: categoryName)
             dailyRecord.entries.append(newEntry)
             
+            let currentFoodTotal = dailyRecord.totalFood
+            let currentWaterTotal = dailyRecord.totalWater
+            
             let defaults = UserDefaults(suiteName: "group.com.philreddy.foodwatertracker")
             if entryType == "Food" {
-                defaults?.set(dailyRecord.totalFood, forKey: "saved_food_consumed")
+                defaults?.set(currentFoodTotal, forKey: "saved_food_consumed")
             } else {
-                defaults?.set(dailyRecord.totalWater, forKey: "saved_water_consumed")
+                defaults?.set(currentWaterTotal, forKey: "saved_water_consumed")
             }
             
             WidgetCenter.shared.reloadAllTimelines()
             NotificationManager.shared.scheduleReminder()
             
             // beams new data to Apple Watch
-            WatchConnector.shared.syncToOtherDevice()
+            WatchConnector.shared.syncToOtherDevice(food: currentFoodTotal, water: currentWaterTotal)
             
             dismiss()
         }

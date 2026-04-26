@@ -20,22 +20,25 @@ class WatchConnector: NSObject, WCSessionDelegate, ObservableObject {
     }
     
     // grabs current intake from memory and beams it to the other device
-    func syncToOtherDevice() {
+    func syncToOtherDevice(food: Double? = nil, water: Double? = nil) {
         if WCSession.isSupported() {
             let session = WCSession.default
             let defaults = UserDefaults(suiteName: "group.com.philreddy.foodwatertracker")
             
-            let food = defaults?.double(forKey: "saved_food_consumed") ?? 0
-            let water = defaults?.double(forKey: "saved_water_consumed") ?? 0
+            // Use passed values if they exist, otherwise fall back to reading from memory
+            let foodToSend = food ?? (defaults?.double(forKey: "saved_food_consumed") ?? 0)
+            let waterToSend = water ?? (defaults?.double(forKey: "saved_water_consumed") ?? 0)
             
-            let data: [String: Any] = ["food": food, "water": water]
+            let data: [String: Any] = ["food": foodToSend, "water": waterToSend]
             
             do {
+                // updates the context so data is available as soon as the watch app opens
                 try session.updateApplicationContext(data)
             } catch {
                 print("Failed to sync context: \(error.localizedDescription)")
             }
             
+            // sends an instant message if both apps are currently open
             if session.isReachable {
                 session.sendMessage(data, replyHandler: nil, errorHandler: nil)
             }
