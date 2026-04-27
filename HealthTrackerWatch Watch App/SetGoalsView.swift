@@ -73,6 +73,13 @@ struct SetGoalsView: View {
 
                 Button("Save") {
                     WidgetCenter.shared.reloadAllTimelines()
+                    
+                    // beams new goals to iOS
+                    WatchConnector.shared.syncToOtherDevice()
+                    
+                    // reschedules reminders based on new goals
+                    NotificationManager.shared.scheduleReminder()
+                    
                     dismiss()
                 }
                 .font(.caption.bold())

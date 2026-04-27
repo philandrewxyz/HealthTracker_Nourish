@@ -6,9 +6,10 @@ import Combine
 class WatchConnector: NSObject, WCSessionDelegate, ObservableObject {
     static let shared = WatchConnector()
     
-    // publishes updates so iOS can catch and save them to SwiftData database
     @Published var syncedFood: Double = 0
     @Published var syncedWater: Double = 0
+    @Published var syncedFoodGoal: Double = 0
+    @Published var syncedWaterGoal: Double = 0
     
     override init() {
         super.init()
@@ -19,33 +20,39 @@ class WatchConnector: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
-    // grabs current intake from memory and beams it to the other device
-    func syncToOtherDevice(food: Double? = nil, water: Double? = nil) {
+    // grabs current intake and goals from memory and beams it to the other device
+    func syncToOtherDevice() {
         if WCSession.isSupported() {
             let session = WCSession.default
             let defaults = UserDefaults(suiteName: "group.com.philreddy.foodwatertracker")
             
-            // Use passed values if they exist, otherwise fall back to reading from memory
-            let foodToSend = food ?? (defaults?.double(forKey: "saved_food_consumed") ?? 0)
-            let waterToSend = water ?? (defaults?.double(forKey: "saved_water_consumed") ?? 0)
+            // prevents from sending iPhone to watch app to 0
+            let foodToSend = defaults?.object(forKey: "saved_food_consumed") as? Double ?? 0.0
+            let waterToSend = defaults?.object(forKey: "saved_water_consumed") as? Double ?? 0.0
+            let foodGoal = defaults?.object(forKey: "food_daily_goal") as? Double ?? 2000.0
+            let waterGoal = defaults?.object(forKey: "water_daily_goal") as? Double ?? 2000.0
+            let stepGoal = defaults?.object(forKey: "step_daily_goal") as? Double ?? 10000.0
             
-            let data: [String: Any] = ["food": foodToSend, "water": waterToSend]
+            let data: [String: Any] = [
+                "food": foodToSend,
+                "water": waterToSend,
+                "foodGoal": foodGoal,
+                "waterGoal": waterGoal,
+                "stepGoal": stepGoal
+            ]
             
             do {
-                // updates the context so data is available as soon as the watch app opens
                 try session.updateApplicationContext(data)
             } catch {
                 print("Failed to sync context: \(error.localizedDescription)")
             }
             
-            // sends an instant message if both apps are currently open
             if session.isReachable {
                 session.sendMessage(data, replyHandler: nil, errorHandler: nil)
             }
         }
     }
     
-    // runs automatically when data is received from other device - my watch app
     private func processReceivedData(_ data: [String: Any]) {
         DispatchQueue.main.async {
             let defaults = UserDefaults(suiteName: "group.com.philreddy.foodwatertracker")
@@ -59,26 +66,28 @@ class WatchConnector: NSObject, WCSessionDelegate, ObservableObject {
                 defaults?.set(newWater, forKey: "saved_water_consumed")
             }
             
-            // tells the receiving device to update its own widgets
+            if let newFoodGoal = data["foodGoal"] as? Double {
+                self.syncedFoodGoal = newFoodGoal
+                defaults?.set(newFoodGoal, forKey: "food_daily_goal")
+            }
+            if let newWaterGoal = data["waterGoal"] as? Double {
+                self.syncedWaterGoal = newWaterGoal
+                defaults?.set(newWaterGoal, forKey: "water_daily_goal")
+            }
+            if let newStepGoal = data["stepGoal"] as? Double {
+                defaults?.set(newStepGoal, forKey: "step_daily_goal")
+            }
+            
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
     
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        processReceivedData(message)
-    }
-    
-    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
-        processReceivedData(applicationContext)
-    }
-    
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) { processReceivedData(message) }
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) { processReceivedData(applicationContext) }
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) { }
     
-    // to be required by iOS, ignored by watchOS
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) { }
-    func sessionDidDeactivate(_ session: WCSession) {
-        WCSession.default.activate()
-    }
+    func sessionDidDeactivate(_ session: WCSession) { WCSession.default.activate() }
     #endif
 }

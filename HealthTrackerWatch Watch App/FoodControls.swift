@@ -53,7 +53,7 @@ struct FoodControls: View {
                 NotificationManager.shared.scheduleReminder()
                 NotificationManager.shared.checkMilestones()
                 
-                // Beams the new food data to your iPhone
+                // beams new food data to iPhone
                 WatchConnector.shared.syncToOtherDevice()
                 
                 dismiss()

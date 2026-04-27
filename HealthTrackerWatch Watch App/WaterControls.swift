@@ -46,7 +46,7 @@ struct WaterControls: View {
                 NotificationManager.shared.scheduleReminder()
                 NotificationManager.shared.checkMilestones()
                 
-                // Beams the new water data to your iPhone
+                // beams new water data to iPhone
                 WatchConnector.shared.syncToOtherDevice()
                 
                 dismiss()

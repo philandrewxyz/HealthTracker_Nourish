@@ -2,7 +2,6 @@ import SwiftUI
 import WidgetKit
 
 struct ContentView: View {
-
     @AppStorage("saved_food_consumed", store: UserDefaults(suiteName: "group.com.philreddy.foodwatertracker"))
     private var foodConsumed: Double = 0.0
 
@@ -50,7 +49,6 @@ struct ContentView: View {
             }
 
             HStack(spacing: 24) {
-                // food Progress Ring
                 NavigationLink(destination: FoodScreen()) {
                     VStack(spacing: 4) {
                         ZStack {
@@ -77,7 +75,6 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
 
-                // water Progress Ring
                 NavigationLink(destination: WaterScreen()) {
                     VStack(spacing: 4) {
                         ZStack {
@@ -105,7 +102,6 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
 
-            // history and goals buttons
             HStack(spacing: 12) {
                 NavigationLink(destination: HistoryView()) {
                     Text("History")
@@ -136,42 +132,31 @@ struct ContentView: View {
             NotificationManager.shared.requestAuthorization()
             checkAndResetDailyGoals()
             
-            
             _ = WatchConnector.shared
+            
+            if foodGoal == 0 { foodGoal = 2000 }
+            if waterGoal == 0 { waterGoal = 2000 }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .active {
                 checkAndResetDailyGoals()
             }
         }
-
-        .onReceive(WatchConnector.shared.$syncedFood) { newValue in
-            if newValue > 0 { self.foodConsumed = newValue }
-        }
-        .onReceive(WatchConnector.shared.$syncedWater) { newValue in
-            if newValue > 0 { self.waterConsumed = newValue }
-        }
+        // UI refreshes when iPhone syncs new data
+        .onReceive(WatchConnector.shared.$syncedFood) { self.foodConsumed = $0 }
+        .onReceive(WatchConnector.shared.$syncedWater) { self.waterConsumed = $0 }
+        .onReceive(WatchConnector.shared.$syncedFoodGoal) { self.foodGoal = $0 }
+        .onReceive(WatchConnector.shared.$syncedWaterGoal) { self.waterGoal = $0 }
     }
     
     private func checkAndResetDailyGoals() {
-            let lastDate = Date(timeIntervalSince1970: lastResetDate)
-            
-            if !Calendar.current.isDateInToday(lastDate) {
-                // save to history before resetting
-                HistoryManager.shared.saveRecord(date: lastDate, food: foodConsumed, water: waterConsumed)
-                
-                foodConsumed = 0.0
-                waterConsumed = 0.0
-                lastResetDate = Date().timeIntervalSince1970
-                
-                // for the app to forget the notifications were sent the previous day
-                if let defaults = UserDefaults(suiteName: "group.com.philreddy.foodwatertracker") {
-                    defaults.set(false, forKey: "food_goal_notified")
-                    defaults.set(false, forKey: "water_goal_notified")
-                    defaults.set(false, forKey: "both_goals_notified")
-                }
-                
-                WidgetCenter.shared.reloadAllTimelines()
-            }
+        let lastDate = Date(timeIntervalSince1970: lastResetDate)
+        if !Calendar.current.isDateInToday(lastDate) {
+            HistoryManager.shared.saveRecord(date: lastDate, food: foodConsumed, water: waterConsumed)
+            foodConsumed = 0.0
+            waterConsumed = 0.0
+            lastResetDate = Date().timeIntervalSince1970
+            WidgetCenter.shared.reloadAllTimelines()
         }
+    }
 }

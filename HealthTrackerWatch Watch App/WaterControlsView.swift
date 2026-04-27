@@ -8,7 +8,7 @@ struct WaterControlsView: View {
     @AppStorage("water_daily_goal", store: UserDefaults(suiteName: "group.com.philreddy.foodwatertracker"))
     private var dailyGoal: Double = 2000
 
-    var progress: Double { consumed / dailyGoal }
+    var progress: Double { dailyGoal > 0 ? consumed / dailyGoal : 0 }
 
     var body: some View {
         VStack(spacing: 12) {

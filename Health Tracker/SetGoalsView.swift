@@ -119,5 +119,8 @@ struct SetGoalsView: View {
         
         // to trigger a notification reschedule so the new goals are reflected
         NotificationManager.shared.scheduleReminder()
+        
+        // beams new goals to watch
+        WatchConnector.shared.syncToOtherDevice()
     }
 }
